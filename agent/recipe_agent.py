@@ -4,17 +4,56 @@ from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from openai import OpenAI
+import requests
 
 # --------------------------------
-# OpenAI client
+# Hugging Face Configuration
 # --------------------------------
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")  
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
+
+# Alternative free models you can use:
+# "meta-llama/Llama-2-7b-chat-hf"
+# "google/flan-t5-xxl"
+# "tiiuae/falcon-7b-instruct"
+# "mistralai/Mistral-7B-Instruct-v0.2" (recommended)
+
+def call_huggingface_model(prompt: str, max_tokens: int = 1000) -> str:
+    """
+    Call Hugging Face Inference API
+    """
+    headers = {}
+    if HF_API_KEY:
+        headers["Authorization"] = f"Bearer {HF_API_KEY}"
+    
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens": max_tokens,
+            "temperature": 0.5,
+            "return_full_text": False
+        }
+    }
+    
+    response = requests.post(HF_API_URL, headers=headers, json=payload)
+    
+    if response.status_code != 200:
+        raise Exception(f"Hugging Face API error: {response.status_code} - {response.text}")
+    
+    result = response.json()
+    
+    # Handle different response formats
+    if isinstance(result, list) and len(result) > 0:
+        return result[0].get("generated_text", "")
+    elif isinstance(result, dict):
+        return result.get("generated_text", "")
+    
+    return str(result)
 
 # --------------------------------
 # FastAPI app
 # --------------------------------
-app = FastAPI(title="Recipe Agent API", version="1.0.0")
+app = FastAPI(title="Recipe Agent API (Hugging Face)", version="1.0.0")
 
 # --------------------------------
 # CORS Configuration
@@ -70,69 +109,63 @@ def generate_recipe_list(req: IngredientRequest):
     if not req.ingredients:
         raise HTTPException(status_code=400, detail="Ingredients list cannot be empty")
     
-    system_prompt = """
-You are a recipe discovery agent.
+    prompt = f"""You are a recipe discovery agent. Suggest 5 realistic recipes using mostly these ingredients: {', '.join(req.ingredients)}.
 
-Rules:
-- Suggest 5 realistic recipes
-- Use mostly provided ingredients
-- Avoid exotic ingredients
-- Do NOT include cooking steps
-- Titles must be concise
-- Return ONLY valid JSON
-"""
-
-    user_prompt = f"""
-User ingredients:
-{req.ingredients}
-
-Return format:
+Return ONLY valid JSON in this exact format (no other text):
 {{
   "recipes": [
     {{
       "id": "short_stable_id",
-      "title": "",
-      "missing": [],
-      "reason": ""
+      "title": "Recipe Title",
+      "missing": ["ingredient1", "ingredient2"],
+      "reason": "Why this recipe is good"
     }}
   ]
 }}
-"""
+
+Rules:
+- Use mostly provided ingredients
+- Avoid exotic ingredients
+- Titles must be concise
+- Return ONLY the JSON, nothing else"""
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Fixed: was "gpt-4.1-mini"
-            temperature=0.4,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ]
-        )
-
-        content = response.choices[0].message.content
+        response_text = call_huggingface_model(prompt, max_tokens=1500)
+        
+        # Extract JSON from response (sometimes models add extra text)
+        json_start = response_text.find('{')
+        json_end = response_text.rfind('}') + 1
+        
+        if json_start == -1 or json_end == 0:
+            raise HTTPException(
+                status_code=500,
+                detail="Model did not return valid JSON"
+            )
+        
+        json_str = response_text[json_start:json_end]
         
         # Parse and validate JSON
         try:
-            result = json.loads(content)
+            result = json.loads(json_str)
         except json.JSONDecodeError as e:
             raise HTTPException(
                 status_code=500, 
-                detail=f"Failed to parse LLM response as JSON: {str(e)}"
+                detail=f"Failed to parse model response as JSON: {str(e)}"
             )
         
         # Validate response structure
         if "recipes" not in result:
             raise HTTPException(
                 status_code=500,
-                detail="LLM response missing 'recipes' field"
+                detail="Model response missing 'recipes' field"
             )
         
         # Validate with Pydantic
         validated_response = RecipeListResponse(**result)
         return validated_response
 
-    except OpenAI.APIError as e:
-        raise HTTPException(status_code=500, detail=f"OpenAI API error: {str(e)}")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
@@ -150,65 +183,57 @@ def generate_recipe_details(req: RecipeDetailRequest):
     if not req.ingredients:
         raise HTTPException(status_code=400, detail="Ingredients list cannot be empty")
     
-    system_prompt = """
-You are a cooking assistant.
+    prompt = f"""You are a cooking assistant. Generate a complete recipe for "{req.recipe_id}" using these ingredients: {', '.join(req.ingredients)}.
 
-Rules:
-- Generate a complete realistic recipe
-- Include step-by-step instructions
-- Prefer user's ingredients
-- Mention substitutions if needed
-- Return ONLY valid JSON
-"""
-
-    user_prompt = f"""
-Recipe ID:
-{req.recipe_id}
-
-User ingredients:
-{req.ingredients}
-
-Return format:
+Return ONLY valid JSON in this exact format (no other text):
 {{
-  "title": "",
+  "title": "Recipe Title",
   "ingredients": [
-    {{ "name": "", "required": true }}
+    {{ "name": "ingredient name", "required": true }}
   ],
   "steps": [
-    "Step 1...",
-    "Step 2..."
+    "Step 1: First instruction",
+    "Step 2: Second instruction"
   ],
-  "tips": []
+  "tips": ["Helpful tip 1", "Helpful tip 2"]
 }}
-"""
+
+Rules:
+- Include clear step-by-step instructions
+- Prefer user's ingredients
+- Mention substitutions if needed
+- Return ONLY the JSON, nothing else"""
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Fixed: was "gpt-4.1-mini"
-            temperature=0.5,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ]
-        )
-
-        content = response.choices[0].message.content
+        response_text = call_huggingface_model(prompt, max_tokens=2000)
+        
+        # Extract JSON from response
+        json_start = response_text.find('{')
+        json_end = response_text.rfind('}') + 1
+        
+        if json_start == -1 or json_end == 0:
+            raise HTTPException(
+                status_code=500,
+                detail="Model did not return valid JSON"
+            )
+        
+        json_str = response_text[json_start:json_end]
         
         # Parse and validate JSON
         try:
-            result = json.loads(content)
+            result = json.loads(json_str)
         except json.JSONDecodeError as e:
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to parse LLM response as JSON: {str(e)}"
+                detail=f"Failed to parse model response as JSON: {str(e)}"
             )
         
         # Validate with Pydantic
         validated_response = RecipeDetailResponse(**result)
         return validated_response
 
-    except OpenAI.APIError as e:
-        raise HTTPException(status_code=500, detail=f"OpenAI API error: {str(e)}")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
@@ -220,4 +245,8 @@ def health_check():
     """
     Health check endpoint to verify the API is running.
     """
-    return {"status": "healthy", "message": "Recipe Agent API is running"}
+    return {
+        "status": "healthy",
+        "message": "Recipe Agent API (Hugging Face) is running",
+        "model": "mistralai/Mistral-7B-Instruct-v0.2"
+    }
