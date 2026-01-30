@@ -1,0 +1,19 @@
+[
+  {
+    "title": "Egg Fried Rice",
+    "ingredients": [
+      {"name": "rice"},
+      {"name": "egg"},
+      {"name": "garlic"}
+    ],
+    "optional_ingredients": ["soy sauce", "green onion"]
+  },
+  {
+    "title": "Garlic Omelet",
+    "ingredients": [
+      {"name": "egg"},
+      {"name": "garlic"},
+      {"name": "butter"}
+    ]
+  }
+]
