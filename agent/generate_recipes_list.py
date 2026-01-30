@@ -4,24 +4,57 @@ from typing import List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from openai import OpenAI
+import requests
 
 # --------------------------------
-# OpenAI client
+# Hugging Face Configuration
 # --------------------------------
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")  
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
+
+def call_huggingface_model(prompt: str, max_tokens: int = 1000) -> str:
+    """
+    Call Hugging Face Inference API
+    """
+    headers = {}
+    if HF_API_KEY:
+        headers["Authorization"] = f"Bearer {HF_API_KEY}"
+    
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens": max_tokens,
+            "temperature": 0.5,
+            "return_full_text": False
+        }
+    }
+    
+    response = requests.post(HF_API_URL, headers=headers, json=payload)
+    
+    if response.status_code != 200:
+        raise Exception(f"Hugging Face API error: {response.status_code} - {response.text}")
+    
+    result = response.json()
+    
+    # Handle different response formats
+    if isinstance(result, list) and len(result) > 0:
+        return result[0].get("generated_text", "")
+    elif isinstance(result, dict):
+        return result.get("generated_text", "")
+    
+    return str(result)
 
 # --------------------------------
 # FastAPI app
 # --------------------------------
-app = FastAPI(title="Recipe List Generator", version="1.0.0")
+app = FastAPI(title="Recipe List Generator (Hugging Face)", version="1.0.0")
 
 # --------------------------------
 # CORS Configuration
 # --------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update with your frontend URL in production (e.g., ["http://localhost:3000"])
+    allow_origins=["*"],  # Update with your frontend URL in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,89 +85,66 @@ class RecipeListResponse(BaseModel):
 def generate_recipe_list(req: IngredientRequest):
     """
     Generate a list of recipe suggestions based on user ingredients.
-    
-    Args:
-        req: IngredientRequest containing list of available ingredients
-        
-    Returns:
-        RecipeListResponse with 5 suggested recipes
-        
-    Raises:
-        HTTPException: If ingredients are empty or API call fails
     """
-    # Validate input
     if not req.ingredients:
         raise HTTPException(status_code=400, detail="Ingredients list cannot be empty")
     
-    system_prompt = """
-You are a recipe discovery agent.
+    prompt = f"""You are a recipe discovery agent. Suggest 5 realistic recipes using mostly these ingredients: {', '.join(req.ingredients)}.
 
-Rules:
-- Suggest 5 realistic recipes
-- Recipes must mostly use provided ingredients
-- Avoid exotic ingredients
-- Do NOT include cooking steps
-- Titles must be concise
-- Return ONLY valid JSON
-"""
-
-    user_prompt = f"""
-User ingredients:
-{req.ingredients}
-
-Return format:
+Return ONLY valid JSON in this exact format (no other text):
 {{
   "recipes": [
     {{
       "id": "short_stable_id",
-      "title": "",
-      "missing": [],
-      "reason": ""
+      "title": "Recipe Title",
+      "missing": ["ingredient1"],
+      "reason": "Why this recipe is good"
     }}
   ]
 }}
-"""
+
+Rules:
+- Use mostly provided ingredients
+- Avoid exotic ingredients
+- Titles must be concise
+- Return ONLY the JSON, nothing else"""
 
     try:
-        # Call OpenAI API
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Fixed: was "gpt-4.1-mini" which doesn't exist
-            temperature=0.4,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ]
-        )
-
-        content = response.choices[0].message.content
+        response_text = call_huggingface_model(prompt, max_tokens=1500)
+        
+        # Extract JSON from response (sometimes models add extra text)
+        json_start = response_text.find('{')
+        json_end = response_text.rfind('}') + 1
+        
+        if json_start == -1 or json_end == 0:
+            raise HTTPException(
+                status_code=500,
+                detail="Model did not return valid JSON"
+            )
+        
+        json_str = response_text[json_start:json_end]
         
         # Parse JSON response
         try:
-            result = json.loads(content)
+            result = json.loads(json_str)
         except json.JSONDecodeError as e:
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to parse LLM response as JSON: {str(e)}"
+                detail=f"Failed to parse model response as JSON: {str(e)}"
             )
         
         # Validate response structure
         if "recipes" not in result:
             raise HTTPException(
                 status_code=500,
-                detail="LLM response missing 'recipes' field"
+                detail="Model response missing 'recipes' field"
             )
         
         # Validate with Pydantic model
         validated_response = RecipeListResponse(**result)
         return validated_response
 
-    except OpenAI.APIError as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"OpenAI API error: {str(e)}"
-        )
     except HTTPException:
-        # Re-raise HTTPExceptions as-is
         raise
     except Exception as e:
         raise HTTPException(
@@ -149,13 +159,11 @@ Return format:
 def health_check():
     """
     Health check endpoint to verify the API is running.
-    
-    Returns:
-        Dictionary with status and message
     """
     return {
         "status": "healthy",
-        "message": "Recipe List Generator API is running"
+        "message": "Recipe List Generator API (Hugging Face) is running",
+        "model": "mistralai/Mistral-7B-Instruct-v0.2"
     }
 
 # --------------------------------
@@ -167,8 +175,9 @@ def root():
     Root endpoint with API information.
     """
     return {
-        "name": "Recipe List Generator API",
+        "name": "Recipe List Generator API (Hugging Face)",
         "version": "1.0.0",
+        "model": "mistralai/Mistral-7B-Instruct-v0.2",
         "endpoints": {
             "POST /agent/recipes": "Generate recipe suggestions from ingredients",
             "GET /health": "Health check",
