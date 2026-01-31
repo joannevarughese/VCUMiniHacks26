@@ -1,11 +1,12 @@
 # VCU Mini Hacks 26 - Backend
 
-Backend server built with Node.js, Express.js, and Anthropic Claude API.
+Backend server built with Node.js, Express.js, and Hugging Face API.
 
 ## Technologies
 
 - Node.js
 - Express.js
-- Anthropic Claude API (@anthropic-ai/sdk)
+- Hugging Face API
+  - OpenAI Model  
 - CORS
 - dotenv
