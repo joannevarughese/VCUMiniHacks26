@@ -56,6 +56,105 @@ export async function POST(req: Request) {
 function getStaticFallbackRecipes(ingredients: string[], filters?: any) {
   const recipeDatabase = [
   {
+    id: "16",
+    name: "BBQ Pulled Pork Sandwich",
+    estimatedTime: "45 min",
+    ingredients: ["pork shoulder", "bbq sauce", "bun", "coleslaw", "onion", "pickles"],
+    steps: [
+      "Cook pork shoulder until tender and shred",
+      "Mix with BBQ sauce",
+      "Serve on bun with coleslaw, onion, and pickles"
+    ],
+    tags: { cuisine: ["american"], style: ["cooking"], diet: [] }
+  },
+  {
+    id: "17",
+    name: "Grilled Steak Fajitas",
+    estimatedTime: "35 min",
+    ingredients: ["steak", "bell pepper", "onion", "tortilla", "lime", "spices"],
+    steps: [
+      "Grill steak and slice thin",
+      "Sauté bell pepper and onion",
+      "Serve steak and veggies in tortilla with lime and spices"
+    ],
+    tags: { cuisine: ["mexican"], style: ["grilling"], diet: [] }
+  },
+  {
+    id: "18",
+    name: "Chicken Parmesan",
+    estimatedTime: "40 min",
+    ingredients: ["chicken breast", "parmesan", "tomato sauce", "mozzarella", "breadcrumbs", "spaghetti"],
+    steps: [
+      "Bread and fry chicken breast",
+      "Top with tomato sauce, mozzarella, and parmesan",
+      "Bake until cheese is melted",
+      "Serve over spaghetti"
+    ],
+    tags: { cuisine: ["italian"], style: ["baking"], diet: [] }
+  },
+  {
+    id: "19",
+    name: "Beef Stir Fry",
+    estimatedTime: "25 min",
+    ingredients: ["beef", "broccoli", "soy sauce", "ginger", "garlic", "rice"],
+    steps: [
+      "Slice beef thin and stir fry with ginger and garlic",
+      "Add broccoli and soy sauce",
+      "Serve over rice"
+    ],
+    tags: { cuisine: ["asian"], style: ["cooking"], diet: [] }
+  },
+  {
+    id: "20",
+    name: "Lamb Curry",
+    estimatedTime: "60 min",
+    ingredients: ["lamb", "curry paste", "coconut milk", "potato", "peas", "rice"],
+    steps: [
+      "Brown lamb and simmer with curry paste",
+      "Add coconut milk, potato, and peas",
+      "Cook until tender and serve with rice"
+    ],
+    tags: { cuisine: ["indian"], style: ["cooking"], diet: [] }
+  },
+  {
+    id: "13",
+    name: "Vegetarian Ramen Noodles",
+    estimatedTime: "30 min",
+    ingredients: ["ramen noodles", "vegetable broth", "soy sauce", "bok choy", "mushrooms", "green onions", "egg"],
+    steps: [
+      "Cook ramen noodles according to package instructions",
+      "Simmer vegetable broth with soy sauce, bok choy, and mushrooms",
+      "Add cooked noodles to broth",
+      "Top with sliced green onions and boiled egg"
+    ],
+    tags: { cuisine: ["asian"], style: ["cooking"], diet: ["vegetarian"] }
+  },
+  {
+    id: "14",
+    name: "Chicken Udon Stir Fry",
+    estimatedTime: "25 min",
+    ingredients: ["udon noodles", "chicken breast", "soy sauce", "carrots", "snap peas", "garlic", "ginger", "oil"],
+    steps: [
+      "Cook udon noodles and set aside",
+      "Stir fry chicken in oil until cooked",
+      "Add garlic, ginger, carrots, and snap peas",
+      "Add noodles and soy sauce, toss to combine"
+    ],
+    tags: { cuisine: ["asian"], style: ["cooking"], diet: [] }
+  },
+  {
+    id: "15",
+    name: "Spicy Peanut Noodle Bowl",
+    estimatedTime: "20 min",
+    ingredients: ["rice noodles", "peanut butter", "soy sauce", "chili paste", "cucumber", "carrot", "lime", "cilantro"],
+    steps: [
+      "Cook rice noodles according to package instructions",
+      "Mix peanut butter, soy sauce, chili paste, and lime juice for sauce",
+      "Toss noodles with sauce, top with cucumber, carrot, and cilantro"
+    ],
+    tags: { cuisine: ["asian"], style: ["cooking"], diet: ["vegetarian"] }
+  },
+  {
     id: "1",
     name: "Classic Avocado Toast",
     estimatedTime: "10 min",
@@ -219,6 +318,67 @@ function getStaticFallbackRecipes(ingredients: string[], filters?: any) {
       "Serve warm"
     ],
     tags: { cuisine: ["italian"], style: ["baking"], diet: ["vegetarian"] }
+  },
+   {
+    id: "21",
+    name: "Stuffed Tomatoes",
+    estimatedTime: "35 min",
+    ingredients: ["tomato", "rice", "ground beef", "onion", "herbs", "parmesan"],
+    steps: [
+      "Cut tops off tomatoes and scoop out insides",
+      "Mix rice, ground beef, onion, and herbs",
+      "Stuff tomatoes and top with parmesan",
+      "Bake until tomatoes are tender"
+    ],
+    tags: { cuisine: ["mediterranean"], style: ["baking"], diet: [] }
+  },
+  {
+    id: "22",
+    name: "Tomato Shakshuka",
+    estimatedTime: "30 min",
+    ingredients: ["tomato", "egg", "onion", "bell pepper", "spices", "olive oil"],
+    steps: [
+      "Sauté onion and bell pepper in olive oil",
+      "Add tomatoes and spices, simmer",
+      "Make wells and crack eggs into sauce",
+      "Cover and cook until eggs are set"
+    ],
+    tags: { cuisine: ["mediterranean"], style: ["cooking"], diet: ["vegetarian"] }
+  },
+  {
+    id: "23",
+    name: "Lettuce Wraps",
+    estimatedTime: "20 min",
+    ingredients: ["lettuce", "ground chicken", "soy sauce", "ginger", "carrot", "green onion"],
+    steps: [
+      "Cook ground chicken with ginger and soy sauce",
+      "Add carrot and green onion",
+      "Spoon mixture into lettuce leaves and wrap"
+    ],
+    tags: { cuisine: ["asian"], style: ["cooking"], diet: [] }
+  },
+  {
+    id: "24",
+    name: "Tofu Stir Fry",
+    estimatedTime: "25 min",
+    ingredients: ["tofu", "broccoli", "bell pepper", "soy sauce", "garlic", "rice"],
+    steps: [
+      "Cube tofu and pan fry until golden",
+      "Add vegetables and stir fry",
+      "Add soy sauce and garlic, serve over rice"
+    ],
+    tags: { cuisine: ["asian"], style: ["cooking"], diet: ["vegan", "vegetarian"] }
+  },
+  {
+    id: "25",
+    name: "Tofu Tacos",
+    estimatedTime: "30 min",
+    ingredients: ["tofu", "taco shell", "lettuce", "tomato", "spices", "salsa"],
+    steps: [
+      "Crumble tofu and cook with spices",
+      "Fill taco shells with tofu, lettuce, tomato, and salsa"
+    ],
+    tags: { cuisine: ["mexican"], style: ["cooking"], diet: ["vegan", "vegetarian"] }
   }
   ]
   
@@ -249,14 +409,58 @@ function getStaticFallbackRecipes(ingredients: string[], filters?: any) {
   }
   
   if (filters?.diet?.length > 0) {
-    matchedRecipes = matchedRecipes.filter(recipe =>
-      filters.diet.some((d: string) => recipe.tags.diet.includes(d.toLowerCase()))
-    )
+    matchedRecipes = matchedRecipes.filter(recipe => {
+      // If vegetarian or vegan is selected, exclude recipes that do not have those tags
+      if (filters.diet.includes("vegetarian")) {
+        if (!recipe.tags.diet.includes("vegetarian")) return false;
+      }
+      if (filters.diet.includes("vegan")) {
+        if (!recipe.tags.diet.includes("vegan")) return false;
+      }
+      // Otherwise, allow recipes that match any diet filter
+      return filters.diet.some((d: string) => recipe.tags.diet.includes(d.toLowerCase()));
+    });
   }
 
-  // If no matches, return some default recipes
+  // If no matches, try to return recipes that match any filter
   if (matchedRecipes.length === 0) {
-    matchedRecipes = recipeDatabase.slice(0, 3)
+    let looseMatches = recipeDatabase;
+    if (searchIngredients.length > 0) {
+      looseMatches = looseMatches.filter(recipe => {
+        const recipeIngredients = recipe.ingredients.map(i => i.toLowerCase());
+        return searchIngredients.some(searchIng =>
+          recipeIngredients.some(recipeIng =>
+            recipeIng.includes(searchIng) || searchIng.includes(recipeIng)
+          )
+        );
+      });
+    }
+    if (filters?.cuisine?.length > 0) {
+      looseMatches = looseMatches.filter(recipe =>
+        filters.cuisine.some((c) => recipe.tags.cuisine.includes(c.toLowerCase()))
+      );
+    }
+    if (filters?.style?.length > 0) {
+      looseMatches = looseMatches.filter(recipe =>
+        filters.style.some((s) => recipe.tags.style.includes(s.toLowerCase()))
+      );
+    }
+    if (filters?.diet?.length > 0) {
+      looseMatches = looseMatches.filter(recipe => {
+        if (filters.diet.includes("vegetarian")) {
+          if (!recipe.tags.diet.includes("vegetarian")) return false;
+        }
+        if (filters.diet.includes("vegan")) {
+          if (!recipe.tags.diet.includes("vegan")) return false;
+        }
+        return filters.diet.some((d: string) => recipe.tags.diet.includes(d.toLowerCase()));
+      });
+    }
+    matchedRecipes = looseMatches;
+  }
+  // If still no matches, return empty array
+  if (matchedRecipes.length === 0) {
+    return [];
   }
 
   // Return recipes without the tags field
