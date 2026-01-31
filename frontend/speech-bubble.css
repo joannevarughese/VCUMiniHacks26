@@ -1,0 +1,9 @@
+.speech-bubble {
+  background: white;
+  border-radius: 10px;
+  padding: 6px 10px;
+  margin-top: 5px;
+  font-size: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  max-width: 150px;
+}
