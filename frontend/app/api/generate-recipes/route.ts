@@ -1,5 +1,60 @@
-// Static recipe database - no AI needed!
-const recipeDatabase = [
+// Backend API URL
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+const USE_AI_AGENT = process.env.NEXT_PUBLIC_USE_AI_AGENT === 'true'
+
+export async function POST(req: Request) {
+  let ingredients: string[] = []
+  let filters = {}
+
+  try {
+    const body = await req.json()
+    ingredients = body.ingredients || []
+    filters = body.filters || {}
+    
+    if (!ingredients || ingredients.length === 0) {
+      return Response.json({ 
+        recipes: [],
+        error: 'No ingredients provided' 
+      })
+    }
+
+    // Only use AI agent if explicitly enabled
+    if (USE_AI_AGENT) {
+      try {
+        // Call the backend API which uses the Python agent
+        const response = await fetch(`${BACKEND_URL}/api/recipes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ingredients, filters }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          return Response.json(data)
+        }
+      } catch (error) {
+        console.warn('AI agent unavailable, falling back to static recipes')
+      }
+    }
+
+    // Use static recipe matching by default
+    return Response.json({ 
+      recipes: getStaticFallbackRecipes(ingredients, filters)
+    })
+
+  } catch (error) {
+    console.error('Error generating recipes:', error)
+    
+    // Fallback to static recipes on error
+    return Response.json({ 
+      recipes: getStaticFallbackRecipes(ingredients, filters)
+    })
+  }
+}
+
+// Fallback static recipes
+function getStaticFallbackRecipes(ingredients: string[], filters?: any) {
+  const recipeDatabase = [
   {
     id: "1",
     name: "Classic Avocado Toast",
@@ -165,10 +220,7 @@ const recipeDatabase = [
     ],
     tags: { cuisine: ["italian"], style: ["baking"], diet: ["vegetarian"] }
   }
-]
-
-export async function POST(req: Request) {
-  const { ingredients, filters } = await req.json()
+  ]
   
   // Convert ingredients to lowercase for matching
   const searchIngredients = (ingredients || []).map((i: string) => i.toLowerCase())
@@ -176,7 +228,6 @@ export async function POST(req: Request) {
   // Filter recipes based on ingredients
   let matchedRecipes = recipeDatabase.filter(recipe => {
     const recipeIngredients = recipe.ingredients.map(i => i.toLowerCase())
-    // Check if any search ingredient matches any recipe ingredient
     return searchIngredients.some((searchIng: string) =>
       recipeIngredients.some(recipeIng => 
         recipeIng.includes(searchIng) || searchIng.includes(recipeIng)
@@ -184,7 +235,7 @@ export async function POST(req: Request) {
     )
   })
 
-  // Apply filters
+  // Apply filters if provided
   if (filters?.cuisine?.length > 0) {
     matchedRecipes = matchedRecipes.filter(recipe =>
       filters.cuisine.some((c: string) => recipe.tags.cuisine.includes(c.toLowerCase()))
@@ -209,7 +260,6 @@ export async function POST(req: Request) {
   }
 
   // Return recipes without the tags field
-  const recipes = matchedRecipes.map(({ tags, ...recipe }) => recipe)
-
-  return Response.json({ recipes })
+  return matchedRecipes.map(({ tags, ...recipe }) => recipe)
 }
+

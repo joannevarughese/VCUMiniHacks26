@@ -49,6 +49,7 @@ export function IngredientSearch({
           onKeyDown={handleKeyDown}
           placeholder="Add an ingredient..."
           className="w-full pl-10 pr-4 py-3 bg-card/80 backdrop-blur-sm border border-primary/20 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+          suppressHydrationWarning
         />
       </div>
 

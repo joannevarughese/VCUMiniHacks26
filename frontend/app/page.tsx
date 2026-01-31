@@ -58,6 +58,7 @@ export default function Home() {
         onClick={() => setIsFilterOpen(true)}
         className="fixed top-4 left-4 z-30 p-2 bg-card/80 backdrop-blur-sm rounded-full border border-primary/20 hover:bg-card transition-colors"
         aria-label="Open filters"
+        suppressHydrationWarning
       >
         <Menu className="w-5 h-5 text-foreground" />
       </button>
